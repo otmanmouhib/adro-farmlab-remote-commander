@@ -80,8 +80,14 @@ export default function DashboardClient({ user }: DashboardClientProps) {
     let isMounted = true;
 
     async function initializeMqtt() {
-      const importedMqtt = await import('mqtt');
-      const mqtt = (importedMqtt as any).default ?? importedMqtt;
+      const importedMqtt = await import('mqtt/dist/mqtt.esm.js');
+      const mqttModule = (importedMqtt as any).default ?? importedMqtt;
+      const mqtt = typeof mqttModule === 'function' ? { connect: mqttModule } : mqttModule;
+
+      if (typeof mqtt.connect !== 'function') {
+        throw new Error('Unable to load MQTT browser client; connect is not a function.');
+      }
+
       client = mqtt.connect(brokerUrl, {
         reconnectPeriod: 5000,
         connectTimeout: 30_000,
