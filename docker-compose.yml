@@ -1,0 +1,15 @@
+version: '3.9'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: adro-farmlab-remote-commander
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env.local
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production

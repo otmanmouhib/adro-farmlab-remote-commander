@@ -35,8 +35,17 @@ type PumpStateData = {
   updatedAt: string;
 };
 
-const brokerUrl =
-  process.env.NEXT_PUBLIC_MQTT_BROKER_URL || 'ws://adro.ddns.net:9001';
+const rawBrokerUrl = process.env.NEXT_PUBLIC_MQTT_BROKER_URL || 'ws://adro.ddns.net:9001';
+
+function getBrokerUrl() {
+  if (typeof window === 'undefined') {
+    return rawBrokerUrl;
+  }
+
+  return window.location.protocol === 'https:'
+    ? rawBrokerUrl.replace(/^ws:/i, 'wss:')
+    : rawBrokerUrl;
+}
 
 function parsePayload(value: ArrayBuffer | string | Uint8Array): any {
   try {
@@ -53,6 +62,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
   const [sensorReadings, setSensorReadings] = useState<Record<string, SensorReadingData>>({});
   const [pumpStates, setPumpStates] = useState<Record<string, PumpStateData>>({});
   const [statusLog, setStatusLog] = useState<string[]>([]);
+  const brokerUrl = getBrokerUrl();
 
   useEffect(() => {
     const savedState = localStorage.getItem('adro-dashboard-state');
@@ -80,9 +90,10 @@ export default function DashboardClient({ user }: DashboardClientProps) {
     let isMounted = true;
 
     async function initializeMqtt() {
-      const importedMqtt = await import('mqtt/dist/mqtt.esm.js');
+      const importedMqtt = await import('mqtt');
       const mqttModule = (importedMqtt as any).default ?? importedMqtt;
       const mqtt = typeof mqttModule === 'function' ? { connect: mqttModule } : mqttModule;
+      const brokerUrl = getBrokerUrl();
 
       if (typeof mqtt.connect !== 'function') {
         throw new Error('Unable to load MQTT browser client; connect is not a function.');
