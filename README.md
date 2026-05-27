@@ -45,11 +45,38 @@ npm run dev
 
 ## Deployment
 
-- No Docker required.
+- No Docker required for Vercel deployments.
 - Deploy directly to Vercel with App Router.
 - Configure environment variables in the Vercel project settings.
 
+## Docker
+
+This repo includes a Dockerfile configured to run the app on port `5000`.
+
+When building the image, pass the required build-time environment variables so Next can compile server-side routes:
+
+```bash
+docker build \
+  --build-arg MONGODB_URI="<your mongodb uri>" \
+  --build-arg NEXTAUTH_URL="<your app url>" \
+  --build-arg NEXTAUTH_SECRET="<your nextauth secret>" \
+  --build-arg NEXT_PUBLIC_MQTT_BROKER_URL="ws://adro.ddns.net:9001" \
+  -t adro-farmlab-remote-commander .
+```
+
+Then run it on port `5000`:
+
+```bash
+docker run -p 5000:5000 --env-file .env.local adro-farmlab-remote-commander
+```
+
+Open the app at `http://localhost:5000`.
+
+If your server is remote, publish port `5000` and access it from the host address.
+
+If you want the container to use a direct MQTT WS broker URL, keep `NEXT_PUBLIC_MQTT_BROKER_URL=ws://adro.ddns.net:9001` in your `.env.local` file.
+
 ## Notes
 - The app uses the browser MQTT client directly with `mqtt.js`.
-- Database connections use `MongoDB_URI` from environment variables.
+- Database connections use `MONGODB_URI` from environment variables.
 - The dashboard is protected by NextAuth and only accessible after login.
