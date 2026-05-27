@@ -80,7 +80,8 @@ export default function DashboardClient({ user }: DashboardClientProps) {
     let isMounted = true;
 
     async function initializeMqtt() {
-      const mqtt = await import('mqtt');
+      const importedMqtt = await import('mqtt');
+      const mqtt = (importedMqtt as any).default ?? importedMqtt;
       client = mqtt.connect(brokerUrl, {
         reconnectPeriod: 5000,
         connectTimeout: 30_000,
