@@ -99,13 +99,20 @@ export default function DashboardClient({ user }: DashboardClientProps) {
         throw new Error('Unable to load MQTT browser client; connect is not a function.');
       }
 
+      const username = process.env.NEXT_PUBLIC_MQTT_USERNAME;
+      const password = process.env.NEXT_PUBLIC_MQTT_PASSWORD;
+
+      console.debug('MQTT connect', { brokerUrl, username, passwordPresent: Boolean(password) });
       client = mqtt.connect(brokerUrl, {
         reconnectPeriod: 5000,
         connectTimeout: 30_000,
         clean: true,
+        username,
+        password,
       });
 
-      client.on('connect', () => {
+      client.on('connect', (connAck: any) => {
+        console.debug('MQTT connected', { connAck });
         if (!isMounted) return;
         setConnectionState('connected');
         setStatusLog((logs) => [`Connected to MQTT broker at ${brokerUrl}`, ...logs].slice(0, 10));
@@ -119,9 +126,23 @@ export default function DashboardClient({ user }: DashboardClientProps) {
       client.on('reconnect', () => {
         if (!isMounted) return;
         setConnectionState('reconnecting');
+        setStatusLog((logs) => ['MQTT reconnecting...', ...logs].slice(0, 10));
+      });
+
+      client.on('offline', () => {
+        console.debug('MQTT offline');
+        if (!isMounted) return;
+        setStatusLog((logs) => ['MQTT offline', ...logs].slice(0, 10));
+      });
+
+      client.on('close', () => {
+        console.debug('MQTT close');
+        if (!isMounted) return;
+        setStatusLog((logs) => ['MQTT connection closed', ...logs].slice(0, 10));
       });
 
       client.on('error', (error: Error) => {
+        console.error('MQTT error', error);
         if (!isMounted) return;
         setConnectionState('error');
         setStatusLog((logs) => [`MQTT error: ${error.message}`, ...logs].slice(0, 10));
