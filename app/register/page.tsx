@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export default function RegisterPage() {
@@ -42,20 +43,21 @@ export default function RegisterPage() {
 
   return (
     <main className="container">
-      <div className="card" style={{ maxWidth: 520, margin: '2rem auto' }}>
-        <div className="header">
-          <div>
-            <h1>Create an Account</h1>
-            <p>Register for secure access to the IoT dashboard.</p>
-          </div>
+      <section className="hero">
+        <div className="eyebrow">Adro FarmLab</div>
+        <div>
+          <h1>Create your account</h1>
+          <p>Set up secure access to the FarmLab dashboard with a simple registration flow.</p>
         </div>
+      </section>
 
+      <div className="card centered-card">
         {success ? <div className="status-pill online">{success}</div> : null}
         {error ? <div className="alert">{error}</div> : null}
 
-        <form onSubmit={handleSubmit} className="grid" style={{ gap: '1rem' }}>
-          <label>
-            Name
+        <form onSubmit={handleSubmit} className="form-grid" aria-label="Registration form">
+          <label className="form-label">
+            <span>Name</span>
             <input
               className="input"
               type="text"
@@ -65,8 +67,8 @@ export default function RegisterPage() {
             />
           </label>
 
-          <label>
-            Email
+          <label className="form-label">
+            <span>Email</span>
             <input
               className="input"
               type="email"
@@ -74,11 +76,12 @@ export default function RegisterPage() {
               onChange={(event) => setEmail(event.target.value)}
               required
               autoComplete="email"
+              placeholder="you@example.com"
             />
           </label>
 
-          <label>
-            Password
+          <label className="form-label">
+            <span>Password</span>
             <input
               className="input"
               type="password"
@@ -87,6 +90,7 @@ export default function RegisterPage() {
               required
               minLength={8}
               autoComplete="new-password"
+              placeholder="At least 8 characters"
             />
           </label>
 
@@ -94,6 +98,10 @@ export default function RegisterPage() {
             {isLoading ? 'Creating account…' : 'Register'}
           </button>
         </form>
+
+        <p className="meta-text form-footer">
+          Already have an account? <Link className="link-primary" href="/login">Sign in</Link>.
+        </p>
       </div>
     </main>
   );

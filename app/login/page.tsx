@@ -35,19 +35,20 @@ export default function LoginPage() {
 
   return (
     <main className="container">
-      <div className="card" style={{ maxWidth: 520, margin: '2rem auto' }}>
-        <div className="header">
-          <div>
-            <h1>Remote Commander Login</h1>
-            <p>Secure access to the FarmLab dashboard.</p>
-          </div>
+      <section className="hero">
+        <div className="eyebrow">Adro FarmLab</div>
+        <div>
+          <h1>Sign in to your farm dashboard</h1>
+          <p>Simple, clear access to live device status, alerts, and remote controls.</p>
         </div>
+      </section>
 
+      <div className="card centered-card">
         {error ? <div className="alert">{error}</div> : null}
 
-        <form onSubmit={handleSubmit} className="grid" style={{ gap: '1rem' }}>
-          <label>
-            Email
+        <form onSubmit={handleSubmit} className="form-grid" aria-label="Login form">
+          <label className="form-label">
+            <span>Email</span>
             <input
               className="input"
               type="email"
@@ -55,11 +56,12 @@ export default function LoginPage() {
               onChange={(event) => setEmail(event.target.value)}
               required
               autoComplete="email"
+              placeholder="you@example.com"
             />
           </label>
 
-          <label>
-            Password
+          <label className="form-label">
+            <span>Password</span>
             <input
               className="input"
               type="password"
@@ -67,6 +69,7 @@ export default function LoginPage() {
               onChange={(event) => setPassword(event.target.value)}
               required
               autoComplete="current-password"
+              placeholder="Enter your password"
             />
           </label>
 
@@ -75,8 +78,8 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p style={{ marginTop: '1.5rem', color: '#cbd5e1' }}>
-          Need an account? <Link href="/register">Register here</Link>.
+        <p className="meta-text form-footer">
+          New here? <Link className="link-primary" href="/register">Create an account</Link>.
         </p>
       </div>
     </main>

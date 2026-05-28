@@ -4,8 +4,8 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'adro FarmLab Remote Commander',
-  description: 'Secure Raspberry Pi IoT dashboard with MQTT over WebSocket and MongoDB auth.',
+  title: 'Adro FarmLab | Remote Commander',
+  description: 'Enterprise-grade MQTT dashboard for remote farm operations and sensor management.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

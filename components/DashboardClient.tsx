@@ -35,6 +35,11 @@ type PumpStateData = {
   updatedAt: string;
 };
 
+type SensorHistoryPoint = {
+  timestamp: number;
+  values: any;
+};
+
 const rawBrokerUrl = process.env.NEXT_PUBLIC_MQTT_BROKER_URL || 'ws://adro.ddns.net:9001';
 
 function getBrokerUrl() {
@@ -60,6 +65,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
   const [connectionState, setConnectionState] = useState('connecting');
   const [heartbeats, setHeartbeats] = useState<Record<string, HeartbeatData>>({});
   const [sensorReadings, setSensorReadings] = useState<Record<string, SensorReadingData>>({});
+  const [sensorHistory, setSensorHistory] = useState<Record<string, SensorHistoryPoint[]>>({});
   const [pumpStates, setPumpStates] = useState<Record<string, PumpStateData>>({});
   const [statusLog, setStatusLog] = useState<string[]>([]);
   const brokerUrl = getBrokerUrl();
@@ -71,6 +77,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
         const parsed = JSON.parse(savedState);
         setHeartbeats(parsed.heartbeats ?? {});
         setSensorReadings(parsed.sensorReadings ?? {});
+        setSensorHistory(parsed.sensorHistory ?? {});
         setPumpStates(parsed.pumpStates ?? {});
       } catch {
         // ignore invalid cache
@@ -81,9 +88,9 @@ export default function DashboardClient({ user }: DashboardClientProps) {
   useEffect(() => {
     localStorage.setItem(
       'adro-dashboard-state',
-      JSON.stringify({ heartbeats, sensorReadings, pumpStates }),
+      JSON.stringify({ heartbeats, sensorReadings, sensorHistory, pumpStates }),
     );
-  }, [heartbeats, sensorReadings, pumpStates]);
+  }, [heartbeats, sensorReadings, sensorHistory, pumpStates]);
 
   useEffect(() => {
     let client: any;
@@ -172,14 +179,24 @@ export default function DashboardClient({ user }: DashboardClientProps) {
 
         if (parts[1] === 'sensorStations' && parts[3] === 'Log' && parts[4] === 'SensorReadings') {
           const key = parts[2];
+          const now = Date.now();
           setSensorReadings((prev) => ({
             ...prev,
             [key]: {
               stationId: parts[2],
-              updatedAt: new Date().toISOString(),
+              updatedAt: new Date(now).toISOString(),
               values: data,
             },
           }));
+          setSensorHistory((prev) => {
+            const existing = prev[key] ?? [];
+            const next = [...existing, { timestamp: now, values: data }]
+              .filter((point) => point.timestamp >= now - 48 * 60 * 60 * 1000);
+            return {
+              ...prev,
+              [key]: next,
+            };
+          });
         }
 
         if (parts[1] === 'pumpStations') {
@@ -210,88 +227,104 @@ export default function DashboardClient({ user }: DashboardClientProps) {
 
   const activePumpCount = useMemo(() => Object.keys(pumpStates).length, [pumpStates]);
   const activeSensorCount = useMemo(() => Object.keys(sensorReadings).length, [sensorReadings]);
+  const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
+  const stationIds = useMemo(() => Object.keys(sensorReadings), [sensorReadings]);
+
+  useEffect(() => {
+    if (!selectedStationId && stationIds.length) {
+      setSelectedStationId(stationIds[0]);
+    }
+  }, [stationIds, selectedStationId]);
+
+  const selectedStation = selectedStationId ? sensorReadings[selectedStationId] : undefined;
+  const selectedHistory = selectedStationId ? sensorHistory[selectedStationId] : [];
+  const selectedHeartbeat = selectedStationId ? heartbeats[`sensorStations-${selectedStationId}`] : undefined;
 
   return (
     <section className="grid" style={{ gap: '1.5rem' }}>
-      <div className="card header" style={{ gap: '1rem', alignItems: 'center' }}>
+      <div className="card dashboard-header">
         <div>
-          <p className="status-pill online">Broker: {brokerUrl}</p>
+          <div className="eyebrow">Live status</div>
           <h2>Welcome, {user.name || user.email}</h2>
-          <p>Connected devices: {activeSensorCount + activePumpCount}</p>
+          <p className="meta-text">Quick overview of your connected stations, current broker connection, and recent activity.</p>
+          <p className="status-pill online" style={{ marginTop: '1rem' }}>Broker: {brokerUrl}</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+
+        <div className="dashboard-actions">
           <p className={`status-pill ${connectionState === 'connected' ? 'online' : connectionState === 'error' ? 'offline' : ''}`}>
             {connectionState}
           </p>
-          <button className="button" onClick={() => signOut({ callbackUrl: '/login' })}>
+          <button className="button secondary" onClick={() => signOut({ callbackUrl: '/login' })}>
             Sign out
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-3">
-        <div className="card">
-          <h3>Station totals</h3>
-          <div className="status-pill online">Sensor stations: {activeSensorCount}</div>
-          <div className="status-pill online">Pump stations: {activePumpCount}</div>
-          <div className="status-pill online">Memory cache: stored locally</div>
-        </div>
-
-        <div className="card">
-          <h3>Subscription topics</h3>
-          <ul style={{ marginTop: '1rem', lineHeight: '1.75' }}>
-            <li>farmLab/+/+/heartbeat</li>
-            <li>farmLab/sensorStations/+/Log/SensorReadings</li>
-            <li>farmLab/pumpStations/+/ota_status</li>
-            <li>farmLab/pumpStations/+/control</li>
-            <li>farmLab/pumpStations/+/config</li>
+      <div className="grid responsive-grid">
+        <div className="card summary-card">
+          <h3 className="section-title">Station totals</h3>
+          <ul className="info-list">
+            <li>Sensor stations: {activeSensorCount}</li>
+            <li>Pump stations: {activePumpCount}</li>
+            <li>Broker: {brokerUrl}</li>
           </ul>
         </div>
 
-        <div className="card">
-          <h3>Recent activity</h3>
+        <div className="card summary-card">
+          <h3 className="section-title">Recent activity</h3>
           <div className="code-block" style={{ minHeight: 140 }}>
             {statusLog.length ? statusLog.map((line, index) => <div key={index}>{line}</div>) : <div>No events yet.</div>}
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2">
-        <div className="card">
-          <h3>Heartbeat summary</h3>
-          {Object.keys(heartbeats).length === 0 ? (
-            <p>No heartbeat messages received yet.</p>
+      <div className="grid responsive-grid">
+        <div className="card station-panel">
+          <h3 className="section-title">Connected stations</h3>
+          {stationIds.length === 0 ? (
+            <p>No sensor stations connected yet.</p>
           ) : (
-            Object.values(heartbeats).map((heartbeat) => (
-              <DeviceCard
-                key={heartbeat.stationId}
-                title={`${heartbeat.stationType} / ${heartbeat.stationId}`}
-                subtitle={`Last seen ${new Date(heartbeat.lastSeen).toLocaleTimeString()}`}
-                data={heartbeat.payload}
-              />
-            ))
+            <div className="station-list">
+              {stationIds.map((stationId) => (
+                <button
+                  key={stationId}
+                  type="button"
+                  className={`station-item ${stationId === selectedStationId ? 'active' : ''}`}
+                  onClick={() => setSelectedStationId(stationId)}
+                >
+                  <span>{stationId}</span>
+                  <span>{new Date(sensorReadings[stationId].updatedAt).toLocaleTimeString()}</span>
+                </button>
+              ))}
+            </div>
           )}
         </div>
 
-        <div className="card">
-          <h3>Sensor readings</h3>
-          {Object.keys(sensorReadings).length === 0 ? (
-            <p>No sensor readings received yet.</p>
+        <div className="card station-detail">
+          <h3 className="section-title">Selected station</h3>
+          {selectedStation ? (
+            <DeviceCard
+              title={`Sensor station ${selectedStation.stationId}`}
+              subtitle={`Updated ${new Date(selectedStation.updatedAt).toLocaleTimeString()}`}
+              data={selectedStation.values}
+              history={selectedHistory}
+            />
           ) : (
-            Object.values(sensorReadings).map((reading) => (
-              <DeviceCard
-                key={reading.stationId}
-                title={`Sensor station ${reading.stationId}`}
-                subtitle={`Updated ${new Date(reading.updatedAt).toLocaleTimeString()}`}
-                data={reading.values}
-              />
-            ))
+            <p>Select a station to see details.</p>
           )}
+          {selectedHeartbeat ? (
+            <div className="device-detail">
+              <div className="device-row">
+                <span className="device-key">Last heartbeat</span>
+                <span className="device-value">{new Date(selectedHeartbeat.lastSeen).toLocaleTimeString()}</span>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
 
       <div className="card">
-        <h3>Pump station details</h3>
+        <h3 className="section-title">Pump station details</h3>
         {Object.keys(pumpStates).length === 0 ? (
           <p>No pump station status data received yet.</p>
         ) : (
