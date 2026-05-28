@@ -23,8 +23,8 @@ export async function POST(request: Request) {
   const collection = client.db(dbName).collection('reports');
 
   await collection.insertOne({
-    userId: session.user.id ?? null,
     userEmail: email,
+    userName: session.user.name ?? email,
     station: station || 'Unspecified',
     issue,
     createdAt: new Date(),

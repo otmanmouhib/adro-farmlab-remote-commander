@@ -23,9 +23,8 @@ export async function POST(request: Request) {
   const collection = client.db(dbName).collection('contactMessages');
 
   await collection.insertOne({
-    userId: session.user.id ?? null,
     userEmail: email,
-    name: name || session.user.name || email,
+    userName: name || session.user.name || email,
     message,
     createdAt: new Date(),
     source: 'contact',
