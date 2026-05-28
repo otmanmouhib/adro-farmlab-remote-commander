@@ -457,6 +457,12 @@ main {
   border: 1px solid var(--border);
 }
 
+.signout-button {
+  width: 100%;
+  margin-top: 1rem;
+  justify-content: center;
+}
+
 .input,
 .select,
 .textarea {

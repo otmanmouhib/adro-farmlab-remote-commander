@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { signOut } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
@@ -18,6 +19,7 @@ type DashboardShellProps = {
 const navItems = [
   { href: '/dashboard', label: 'Overview' },
   { href: '/dashboard/stations', label: 'Stations' },
+  { href: '/settings', label: 'Settings' },
   { href: '/contact', label: 'Contact' },
   { href: '/report', label: 'Report' },
 ];
@@ -58,6 +60,9 @@ export default function DashboardShell({ user, title, children }: DashboardShell
         <div className="sidebar-footer">
           <p className="sidebar-label">Signed in as</p>
           <p>{user.email ?? user.name ?? 'Operator'}</p>
+          <button type="button" className="button secondary signout-button" onClick={() => signOut({ callbackUrl: '/login' })}>
+            Sign out
+          </button>
         </div>
       </aside>
 

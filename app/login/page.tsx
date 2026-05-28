@@ -34,10 +34,10 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="container">
+    <main className="container landing-page">
       <section className="hero">
-        <div className="eyebrow">Adro FarmLab</div>
         <div>
+          <span className="eyebrow">Adro FarmLab</span>
           <h1>Sign in to your farm dashboard</h1>
           <p>Simple, clear access to live device status, alerts, and remote controls.</p>
         </div>
@@ -82,6 +82,21 @@ export default function LoginPage() {
           New here? <Link className="link-primary" href="/register">Create an account</Link>.
         </p>
       </div>
+
+      <section className="feature-grid page-section">
+        <div className="card feature-card">
+          <h3>Live operations</h3>
+          <p>Monitor active stations, sensor health, and network connectivity in one unified view.</p>
+        </div>
+        <div className="card feature-card">
+          <h3>Support-ready</h3>
+          <p>Contact support or report issues directly from the dashboard with built-in workflows.</p>
+        </div>
+        <div className="card feature-card">
+          <h3>Secure access</h3>
+          <p>Sign in to manage farm devices safely with role-aware credentials and protected controls.</p>
+        </div>
+      </section>
     </main>
   );
 }
